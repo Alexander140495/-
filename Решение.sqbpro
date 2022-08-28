@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:/Users/aprivalov/Downloads/db.sqlite3" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser query pragmas" current="2"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="617"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,10:maindepartment"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="department" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="40"/><column index="2" value="59"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="Задание1">--Задание 1
+--Вывести в таблице:
+--  * имя департамента
+--  * количество сотрудников с ЗП
+--  * количество сотрудников с грейдом &quot;А&quot;
+--  * количество сотрудников с другими грейдами
+--  * максимальную ЗП по департаменту
+--  1. + Отсортировать по (Имени департамента, размеру ЗП: двойнай сортировка)
+--  2. + Для департаментов, в которых 0 сотрудников.
+--
+-- Решение ниже на диалекте SQLite
+
+--1
+select distinct Департамент, 
+		count (Зарплата) 'Количество сотрудников с ЗП', 
+		sum(case when grade='A' then 1 else 0 end) 'Количество сотрудников с грейдом &quot;А&quot;', 
+		sum(case when grade not in ('A') then 1 else 0 end) 'Количество сотрудников с другими грейдами', 
+		max(Зарплата) 'Максимальная ЗП по департаменту' 
+	from 
+		(select d.id,d.name as 'Департамент',m.user_id,s.salary 'Зарплата',u.name,u.grade from department d 
+		left join mtm m on d.id = m.department_id 
+		left join salary s on s.user_id = m.user_id
+		left join &quot;user&quot; u on u.id = s.user_id) 
+		group by Департамент 
+		order by max(Зарплата) desc, Департамент;
+
+--2
+select distinct Департамент, 
+		count (Зарплата) 'Количество сотрудников с ЗП', 
+		sum(case when grade='A' then 1 else 0 end) 'Количество сотрудников с грейдом &quot;А&quot;', 
+		sum(case when grade not in ('A') then 1 else 0 end) 'Количество сотрудников с другими грейдами', 
+		max(Зарплата) 'Максимальная ЗП по департаменту' 
+from 
+		(select d.id,
+			d.name as 'Департамент',
+			m.user_id,
+			s.salary 'Зарплата',
+			u.name,u.grade 
+		from department d 
+		left join mtm m on d.id = m.department_id 
+		left join salary s on s.user_id = m.user_id
+		left join &quot;user&quot; u on u.id = s.user_id 
+		where m.department_id is NULL) 
+		group by Департамент; 
+</sql><sql name="Задание2">-- Задание 2
+-- Вывести в таблице
+--  * имя сотрудника
+--  * грейд сотрудника
+--  * зарплата сотрудника
+--  * количество департаментов, в которых числится сотрудник
+--
+--  1. Отсортировать по (Имени сотрудника, количеству департаментов по убыванию)
+--  2. + Сгруппировать по грейду, вывести:
+--   * Количество сотрудником с этим грейдом
+--   * Количество сотрудников c этим грейдом, которые числятся более чем в одном департаменте
+--   * среднюю ЗП сотрудников с этим грейдом
+
+--1
+select u.name 'Имя',
+		u.grade 'Грейд', 
+		s.salary 'Зарплата',
+		count(m.department_id) 'Количество_департаментов' 
+from &quot;user&quot; u 
+join salary s on u.id =s.user_id 
+join mtm m on m.user_id=u.id 
+GROUP by u.id 
+order by Имя,Количество_департаментов;
+
+--2
+select u.grade 'Грейд',
+		count(grade) 'Количество сотрудников', 
+		sum(case when C_dep_id&gt;1 then 1 else 0 end) 'Количество сотрудников в более чем 1 департаменте',
+		AVG(s.salary) 'Средняя ЗП'  
+from (select m.user_id, 
+			count(m.department_id) C_dep_id
+			from mtm m 
+			GROUP by m.user_id) c_n 
+left join &quot;user&quot; u on c_n.user_id=u.id 
+left join salary s on c_n.user_id =s.user_id 
+group by u.grade; 
+	
+</sql><current_tab id="1"/></tab_sql></sqlb_project>
